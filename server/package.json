@@ -4,8 +4,11 @@
   "description": "MongoDB tutorial",
   "main": "server.js",
   "scripts": {
-    "start": "node server",
-    "dev": "nodemon server"
+    "start": "node server.js",
+    "client-install": "npm install --prefix client",
+    "client": "cd ../ && npm start --prefix client",
+    "server": "nodemon server.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "author": "Dave Gray",
   "license": "ISC",
@@ -24,6 +27,7 @@
     "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "concurrently": "^7.1.0",
     "nodemon": "^2.0.12"
   }
 }
