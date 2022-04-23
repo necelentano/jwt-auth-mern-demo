@@ -82,6 +82,9 @@ const Register = () => {
       console.log(response.accessToken);
       setSuccess(true);
       // clear input fields
+      setUser('');
+      setPwd('');
+      setMatchPwd('');
     } catch (error) {
       if (!error?.response) {
         setErrMsg('No Server Response');
