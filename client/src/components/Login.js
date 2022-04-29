@@ -1,12 +1,14 @@
 import { useRef, useState, useEffect } from 'react';
 import useAuth from '../hooks/useAuth';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import useInput from '../hooks/useInput';
+import useToggle from '../hooks/useToggle';
 
 import axios from '../api/axios';
 const LOGIN_URL = '/auth';
 
 const Login = () => {
-  const { setAuth, persist, setPersist } = useAuth();
+  const { setAuth } = useAuth();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,9 +17,10 @@ const Login = () => {
   const userRef = useRef();
   const errRef = useRef();
 
-  const [user, setUser] = useState('');
+  const [user, resetUser, attributeObj] = useInput('user', ''); //useState('');
   const [pwd, setPwd] = useState('');
   const [errMsg, setErrMsg] = useState('');
+  const [check, toggleCheck] = useToggle('persist', false);
 
   useEffect(() => {
     userRef.current.focus();
@@ -44,7 +47,7 @@ const Login = () => {
       const accessToken = response?.data?.accessToken;
       const roles = response?.data?.roles;
       setAuth({ user, pwd, roles, accessToken });
-      setUser('');
+      resetUser('');
       setPwd('');
       navigate(from, { replace: true });
     } catch (err) {
@@ -61,13 +64,13 @@ const Login = () => {
     }
   };
 
-  const togglePersist = () => {
-    setPersist((prev) => !prev);
-  };
+  // const togglePersist = () => {
+  //   setPersist((prev) => !prev);
+  // };
 
-  useEffect(() => {
-    localStorage.setItem('persist', persist);
-  }, [persist]);
+  // useEffect(() => {
+  //   localStorage.setItem('persist', persist);
+  // }, [persist]);
 
   return (
     <section>
@@ -86,8 +89,7 @@ const Login = () => {
           id="username"
           ref={userRef}
           autoComplete="off"
-          onChange={(e) => setUser(e.target.value)}
-          value={user}
+          {...attributeObj}
           required
         />
 
@@ -104,8 +106,8 @@ const Login = () => {
           <input
             type="checkbox"
             id="persist"
-            onChange={togglePersist}
-            checked={persist}
+            onChange={toggleCheck}
+            checked={check}
           />
           <label htmlFor="persist">Trust This Device</label>
         </div>
