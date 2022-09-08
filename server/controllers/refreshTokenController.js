@@ -37,23 +37,60 @@ const handleRefreshToken = async (req, res) => {
     return res.sendStatus(403); //Forbidden
   }
 
+  // we find that we have valid refreshToken and now we can reissue the new one
+  // but still need to remove old token from refreshToken array in DB
+  // and create new array without it
+  const newRefreshTokenArray = foundUser.refreshToken.filter(
+    (rt) => rt !== refreshToken
+  );
+
   // evaluate jwt
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-    if (err || foundUser.username !== decoded.username)
-      return res.sendStatus(403);
-    const roles = Object.values(foundUser.roles);
-    const accessToken = jwt.sign(
-      {
-        UserInfo: {
-          username: decoded.username,
-          roles: roles,
+  jwt.verify(
+    refreshToken,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      // if we recieve token (and find user with related to) but it expired
+      if (err) {
+        foundUser.refreshToken = [...newRefreshTokenArray];
+        const result = await foundUser.save();
+      }
+
+      if (err || foundUser.username !== decoded.username)
+        return res.sendStatus(403);
+
+      // if refreshToken was still valid
+      const roles = Object.values(foundUser.roles);
+
+      const accessToken = jwt.sign(
+        {
+          UserInfo: {
+            username: decoded.username,
+            roles: roles,
+          },
         },
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "30s" }
-    );
-    res.json({ roles, accessToken });
-  });
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: "30s" }
+      );
+      // with this approach we also want to make a new refresh token
+      const newRefreshToken = jwt.sign(
+        { username: foundUser.username },
+        process.env.REFRESH_TOKEN_SECRET,
+        { expiresIn: "1d" }
+      );
+      // Saving refreshToken with current user
+      foundUser.refreshToken = [...newRefreshTokenArray, newRefreshToken];
+      const result = await foundUser.save();
+
+      // Creates Secure Cookie with refresh token
+      res.cookie("jwt", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None",
+        maxAge: 24 * 60 * 60 * 1000,
+      });
+      res.json({ roles, accessToken });
+    }
+  );
 };
 
 module.exports = { handleRefreshToken };
