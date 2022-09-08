@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const handleLogin = async (req, res) => {
   const cookies = req.cookies;
+  console.log(`cookie available at login: ${JSON.stringify(cookies)}`);
   const { user, pwd } = req.body;
   if (!user || !pwd)
     return res
@@ -25,7 +26,7 @@ const handleLogin = async (req, res) => {
         },
       },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "30s" }
+      { expiresIn: "20s" }
     );
     const newRefreshToken = jwt.sign(
       { username: foundUser.username },
@@ -62,7 +63,7 @@ const handleLogin = async (req, res) => {
 
     // Send authorization roles (if we don't have it in JWT payload) access token to user
     res.json({
-      //roles,
+      roles,
       accessToken,
     });
   } else {

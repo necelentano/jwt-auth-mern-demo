@@ -25,9 +25,10 @@ const handleRefreshToken = async (req, res) => {
 
         //otherwise if it's a valid, we know someone is attempting to use a refresh token. It's refreshToken reuse case
         // we find user and delete all refresh tokens from refreshToken array
+        console.log("Attempted refresh token reuse!");
         const hackedUser = await User.findOne({
           username: decoded.username,
-        }).exac();
+        }).exec();
         hackedUser.refreshToken = [];
         const result = await hackedUser.save();
         console.log({ result });
@@ -51,8 +52,10 @@ const handleRefreshToken = async (req, res) => {
     async (err, decoded) => {
       // if we recieve token (and find user with related to) but it expired
       if (err) {
+        console.log("Expired refresh token");
         foundUser.refreshToken = [...newRefreshTokenArray];
         const result = await foundUser.save();
+        console.log({ result });
       }
 
       if (err || foundUser.username !== decoded.username)
