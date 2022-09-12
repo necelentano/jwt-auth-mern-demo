@@ -99,3 +99,29 @@
 - [React Login, Registration, and Authentication Playlist](https://www.youtube.com/playlist?list=PL0Zuz27SZ-6PRCpm9clX0WiBEMB70FWwd)
 - [Axios Interceptors](https://axios-http.com/docs/interceptors)
 - [Best Practices for React Data Security, Logins, Passwords, JWTs](https://www.youtube.com/watch?v=3QaFEu-KkR8)
+
+---
+
+# Refresh Token Rotation & Reuse Detection (Дополнение)
+
+JWT аутентификация предпологает, что после успешного входа в систему будут созданы accessToken и refreshToken.
+
+AccessToken - краткосрочный токен (минуты).
+RefreshToken - долгосрочный токен (1 или более дней).
+
+AccessToken отсылается как JSON. Клиент хранит его в памяти, но не в localStorage или cookie. AccessToken должен иметь "срок жизни".
+RefreshToken отсылается сервером браузеру как защищенные httpOnly cookie, которые не доступны через JavaScript. RefreshToken должен иметь "срок жизни".
+
+Каждый раз когда поступает запрос к API - AccessToken отправляется с запросом. Когда срок жизни AccessToken истекает, делаем запрос к endpoint'у `/refresh`. Вместе с запросом передаем RefreshToken, который храним в httpOnly cookie, чтобы получить новый AccessToken. Сам RefreshToken верифицируем с БД. RefreshToken должен иметь "срок жизни", либо его можно удалить "вручную" при выходе (logout) из системы.
+
+Но, что если RefreshToken скомпроментирован? Доступ к токену был получен до того как истек его срок жизни. Здесь нам поможет такой подход как RefreshToken Rotation. При таком подходе каждый раз когда выпускается новый AccessToken, также выпускается и новый RefreshToken. Это не устраняет риски взлома, но значительно сокращает такую возможность.
+
+Подход RefreshToken Rotation становится еще более эффективным и защищенным, если сочетать его с другой техникой - RefreshToken Reuse Detection. RefreshToken Reuse Detection позволяет использовать RefreshToken только один раз. После того как RefreshToken был использован он становится невалидным. Если была выявлена попытка повторного использвования RefreshToken, то все RefreshToken токены становятся невалидными для пользователя (токенов может быть несколько, если есть поддержка нескольких устройств) и заставит пользователя пройти аутентентификацию (login) заново.
+
+Детали реализации читать в комментариях для указанных ниже файлов.
+
+### Изменения в файлах (с комментариями)
+
+- authController.js
+- logoutController.js
+- refreshController.js
