@@ -34,12 +34,28 @@ const handleLogin = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    const newRefreshTokenArray = !cookies?.jwt
+    let newRefreshTokenArray = !cookies?.jwt
       ? foundUser.refreshToken
       : foundUser.refreshToken.filter((rt) => rt !== cookies.jwt);
 
     // if cookies (token) exist we want to delete them
     if (cookies?.jwt) {
+      /* 
+        Scenario added here: 
+          1) User logs in but never uses RT and does not logout 
+          2) RT is stolen
+          3) If 1 & 2, reuse detection is needed to clear all RTs when user logs in
+      */
+      const refreshToken = cookies.jwt;
+      const foundToken = await User.findOne({ refreshToken }).exec();
+
+      // Detected refresh token reuse!
+      if (!foundToken) {
+        console.log("attempted refresh token reuse at login!");
+        // clear out ALL previous refresh tokens
+        newRefreshTokenArray = [];
+      }
+
       res.clearCookie("jwt", {
         httpOnly: true,
         sameSite: "None",
